@@ -1,2 +1,5 @@
 outputs/*
 log.txt
+__trash/*
+test/*
+src/__pycache__/*

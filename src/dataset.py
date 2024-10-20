@@ -31,7 +31,23 @@ def preprocess_dataset(data, tokenizer, max_length):
     def preprocess(example):
         inputs = tokenizer(example["text"], truncation=True, padding = 'max_length', max_length = max_length, return_tensors="pt", return_offsets_mapping = True)
         labels = torch.ones_like(inputs["input_ids"]) * -100
+        log_template = """
+        labelling text:
+
+        {text}
+        -----------------------------------
+        labelling answer:
+
+        {answer}
+        -----------------------------------
+        (char_start, char_end), (token_start, token_end):
         
+        ({cs},{ce}), ({ts},{te})
+        ----------------------------------- 
+        labelled:
+        ({label})
+        ***********************************
+        """ 
         for answer in example["answers"]:
             char_start = example["text"].find(answer)
             char_end = char_start + len(answer)
@@ -46,13 +62,18 @@ def preprocess_dataset(data, tokenizer, max_length):
                     token_end= i
                     labels[0][token_start:token_end + 1] = inputs["input_ids"][0][token_start:token_end + 1]
                     break
+            '''
+            if token_end == 0 and token_start != 0:
+                labels[0][token_start:] = inputs["input_ids"][0][token_start:]
+            #log(log_template.format(text = example["text"], answer = answer, cs = char_start, ce = char_end,
+            #                        ts = token_start, te = token_end, label = str(labels[0].tolist())))
+            '''
+        #THIS IS KEY
         inputs["labels"] = labels
-        '''
         inputs["input_ids"] = inputs["input_ids"][0]
         inputs["labels"] = inputs["labels"][0]
         inputs["attention_mask"] = inputs["attention_mask"][0]
         inputs["offset_mapping"] = inputs["offset_mapping"][0]
-        '''
         #print(inputs["input_ids"].shape, inputs["labels"].shape, inputs["attention_mask"].shape)
         return inputs
     
