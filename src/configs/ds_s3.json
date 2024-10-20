@@ -21,5 +21,6 @@
     "gradient_accumulation_steps": "auto",
     "gradient_clipping": "auto",
     "steps_per_print": 2000,
-    "wall_clock_breakdown": false
+    "wall_clock_breakdown": false,
+    "stage3_gather_16bit_weights_on_model_save": true
 }

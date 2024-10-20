@@ -31,7 +31,7 @@ def train_instruction_following(model_path, tokenizer, dataset, stage = 2):
             logging_steps=20,
             save_steps=500,
             eval_steps=500,
-            deepspeed="./src/configs/ds_s3.json", 
+            deepspeed="./src/configs/ds_s" + str(stage) + ".json", 
             report_to="tensorboard",
             fp16=True
         )

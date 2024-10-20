@@ -64,5 +64,5 @@ def inference(model_name_or_path):
         print(f"Chatbot: {response}")
              
 if __name__ == "__main__":
-    main() 
-    #inference("./outputs/model/zero3/checkpoint-1352")
+    #main() 
+    inference("./outputs/model/DSzero2/checkpoint-1352")
