@@ -1,6 +1,6 @@
 from datasets import load_dataset
 import torch
-from .misc import log
+from .test.misc import log
 
 def preprocess_dataset(data, tokenizer, max_length):
     """
@@ -10,13 +10,10 @@ def preprocess_dataset(data, tokenizer, max_length):
     {text: <s>[INST]...[\INST]...[INST]...[\INST]...<\s>}
     """
     def fit_template(example):
-        """
-        inputs should be pre-tokenized. Both lists.
-        """
         template = "[INST]{ins}[\\INST]{ans}<\\s>"
         ret = "<s>"
         example["answers"] = []
-        for i in range(0, len(example), 2):
+        for i in range(0, len(example['conversations'])-1, 2):
             if not example["conversations"][i]["from"] == "human" and example["conversations"][i+1]["from"] == "gpt":
                 i += 1
             instruction, answer = example["conversations"][i], example["conversations"][i+1]
@@ -26,12 +23,15 @@ def preprocess_dataset(data, tokenizer, max_length):
         example['text'] = ret
         return example
 
-    template_dataset = data.map(fit_template, remove_columns=['conversations', 'source'], num_proc=4) 
+    template_dataset = data.map(fit_template, remove_columns=['conversations', 'source'], num_proc=1) 
     
     def preprocess(example):
         inputs = tokenizer(example["text"], truncation=True, padding = 'max_length', max_length = max_length, return_tensors="pt", return_offsets_mapping = True)
         labels = torch.ones_like(inputs["input_ids"]) * -100
+        #log("input ids:" + inputs["input_ids"][0] + "\n\n\n")
         log_template = """
+        for this entry, there's {n} answers
+        ***********************************
         labelling text:
 
         {text}
@@ -50,7 +50,7 @@ def preprocess_dataset(data, tokenizer, max_length):
         """ 
         for answer in example["answers"]:
             char_start = example["text"].find(answer)
-            char_end = char_start + len(answer)
+            char_end = char_start + len(answer) - 1
             
             token_start = 0
             token_end = 0
@@ -62,12 +62,12 @@ def preprocess_dataset(data, tokenizer, max_length):
                     token_end= i
                     labels[0][token_start:token_end + 1] = inputs["input_ids"][0][token_start:token_end + 1]
                     break
-            '''
             if token_end == 0 and token_start != 0:
                 labels[0][token_start:] = inputs["input_ids"][0][token_start:]
-            #log(log_template.format(text = example["text"], answer = answer, cs = char_start, ce = char_end,
-            #                        ts = token_start, te = token_end, label = str(labels[0].tolist())))
-            '''
+        ''' 
+            log(log_template.format(n=len(example["answers"]), text = example["id"], answer = answer, cs = char_start, ce = char_end,
+                                    ts = token_start, te = token_end, label = str(labels[0].tolist())))
+        '''
         #THIS IS KEY
         inputs["labels"] = labels
         inputs["input_ids"] = inputs["input_ids"][0]
@@ -77,7 +77,7 @@ def preprocess_dataset(data, tokenizer, max_length):
         #print(inputs["input_ids"].shape, inputs["labels"].shape, inputs["attention_mask"].shape)
         return inputs
     
-    tokenized_dataset = template_dataset.map(preprocess, remove_columns=['id', 'answers', 'text'], batched = False, num_proc=4)
+    tokenized_dataset = template_dataset.map(preprocess, remove_columns=['id', 'answers', 'text'], batched = False, num_proc=8)
     return tokenized_dataset
 
 def prepare_dataset(name, tokenizer, max_context = 2048):

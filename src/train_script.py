@@ -1,8 +1,8 @@
-from transformers import  TrainingArguments, Trainer, DataCollatorForLanguageModeling
+from transformers import  TrainingArguments, Trainer, DataCollatorForLanguageModeling, AutoModelForCausalLM
 import nltk
 from nltk.translate.bleu_score import sentence_bleu
 
-def train_instruction_following(model, tokenizer, dataset):
+def train_instruction_following(model_path, tokenizer, dataset, stage = 2):
     def compute_metrics(pred):
         references = pred.label_ids
         generated_texts = pred.predictions
@@ -16,25 +16,44 @@ def train_instruction_following(model, tokenizer, dataset):
         return {
             'bleu': sum(bleu_scores) / len(bleu_scores)
         }
-    training_args = TrainingArguments(
-        output_dir="./outputs/model/zero2",
-        eval_strategy="epoch",
-        per_device_train_batch_size = 8,
-        per_device_eval_batch_size = 2,
-        learning_rate=8e-6,
-        weight_decay=1e-5,
-        push_to_hub=False,
-        num_train_epochs=8,
-        max_grad_norm = 2.0,
-        logging_dir="./outputs/model/new/logs",
-        logging_steps=20,
-        save_steps=500,
-        eval_steps=500,
-        deepspeed="./src/configs/ds_s2.json",  # 启用 DeepSpeed 并指定配置文件
-        report_to="tensorboard",
-        fp16=True
-    )
+    if stage > 0:
+        training_args = TrainingArguments(
+            output_dir="./outputs/model/DSzero" + str(stage),
+            eval_strategy="epoch",
+            per_device_train_batch_size = 8,
+            per_device_eval_batch_size = 2,
+            learning_rate=8e-6,
+            weight_decay=1e-5,
+            push_to_hub=False,
+            num_train_epochs=8,
+            max_grad_norm = 2.0,
+            logging_dir="./outputs/model/new/logs",
+            logging_steps=20,
+            save_steps=500,
+            eval_steps=500,
+            deepspeed="./src/configs/ds_s3.json", 
+            report_to="tensorboard",
+            fp16=True
+        )
+    else:
+        training_args = TrainingArguments(
+            output_dir="./outputs/model/vanilla",
+            eval_strategy="epoch",
+            per_device_train_batch_size = 8,
+            per_device_eval_batch_size = 2,
+            learning_rate=8e-6,
+            weight_decay=1e-5,
+            push_to_hub=False,
+            num_train_epochs=8,
+            max_grad_norm = 2.0,
+            logging_dir="./outputs/model/new/logs",
+            logging_steps=20,
+            save_steps=500,
+            eval_steps=500,
+            report_to="tensorboard",
+        )
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+    model = AutoModelForCausalLM.from_pretrained(model_path)
     trainer = Trainer(
         model=model,
         args=training_args,

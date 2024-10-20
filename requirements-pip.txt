@@ -1,0 +1,6 @@
+transformers==4.45.2
+deepspeed==0.15.2
+nltk
+datasets
+sacrebleu
+tqdm
