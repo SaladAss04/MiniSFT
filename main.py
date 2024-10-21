@@ -48,7 +48,7 @@ def inference(model_name_or_path):
     def chat(model, tokenizer, input_text, max_length=2048):
         inputs = tokenizer(input_text, return_tensors="pt", padding=True)
         # 对输入数据进行推理
-        outputs = model.generate(inputs['input_ids'], attention_mask=inputs['attention_mask'], max_length=100, num_beams=5, early_stopping=True)
+        outputs = model.generate(inputs['input_ids'], attention_mask=inputs['attention_mask'], max_length=256, num_beams=5)
 
         generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
@@ -60,9 +60,9 @@ def inference(model_name_or_path):
             print("Chatbot: 再见！")
             break
         
-        response = chat_with_pipeline(model, tokenizer, user_input)
+        response = chat(model, tokenizer, user_input)
         print(f"Chatbot: {response}")
              
 if __name__ == "__main__":
     #main() 
-    inference("./outputs/model/DSzero2/checkpoint-1352")
+    inference("./outputs/model/zero3/checkpoint-1352")
